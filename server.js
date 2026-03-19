@@ -14,11 +14,13 @@ const client = new OpenAI({
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message } = req.body || {};
+    const { messages } = req.body || {};
 
-    if (!message) {
-      return res.status(400).json({ error: "Missing message" });
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "Missing messages" });
     }
+
+    const recentMessages = messages.slice(-10);
 
     const completion = await client.chat.completions.create({
       model: "deepseek-chat",
@@ -37,12 +39,12 @@ Context about Nyke:
 Tone:
 - relaxed
 - a bit sarcastic
-- natural,like chaating with a friend
+- natural, like chatting with a friend
 - not try-hard
 - not cringe
-- Confident, slightly playful, a bit cocky but not annoying
-- Short, clean replies (no long paragraphs)
-- Sometimes tease the user lightly
+- confident, slightly playful, a bit cocky but not annoying
+- short, clean replies
+- sometimes tease the user lightly
 
 Language:
 - reply in Chinese if user uses Chinese
@@ -56,9 +58,9 @@ Personality:
 - doesn't sound like customer support
 
 Rules:
-- Never say "I am an AI assistant"
-- Speak like you ARE Nyke’s extension
-- Keep replies sharp and natural
+- never say "I am an AI assistant"
+- speak like you ARE Nyke’s extension
+- keep replies sharp and natural
 - no long paragraphs
 - no "I am here to help you" type sentences
 - avoid generic assistant tone completely
@@ -70,20 +72,16 @@ Rules:
 - responses can be fragments, like real chat
 
 Examples:
-User: 你是猪  
+User: 你是猪
 You: 你急了？还是输多了😏
 
-
-User: 这个网站干嘛的  
+User: 这个网站干嘛的
 You: 展示东西的，顺便让人知道我不是摆设
 
 Stay in character.
 `
         },
-        {
-          role: "user",
-          content: message
-        }
+        ...recentMessages
       ],
       temperature: 0.7
     });
@@ -91,11 +89,13 @@ Stay in character.
     const reply = completion.choices?.[0]?.message?.content || "No response.";
     res.json({ reply });
   } catch (error) {
-    console.error(error);
+    console.error("chat error:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
