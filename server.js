@@ -86,8 +86,36 @@ Stay in character.
       temperature: 0.7
     });
 
-    const reply = completion.choices?.[0]?.message?.content || "No response.";
-    res.json({ reply });
+    console.log("completion raw:", JSON.stringify(completion, null, 2));
+    console.log("message content raw:", completion.choices?.[0]?.message?.content);
+
+let reply = "No response.";
+
+if (
+  completion &&
+  completion.choices &&
+  completion.choices.length > 0 &&
+  completion.choices[0].message
+) {
+  const rawContent = completion.choices[0].message.content;
+
+  if (typeof rawContent === "string") {
+    reply = rawContent;
+  } else if (Array.isArray(rawContent)) {
+    reply = rawContent
+      .map(item => {
+        if (typeof item === "string") return item;
+        if (item && typeof item.text === "string") return item.text;
+        return "";
+      })
+      .join("");
+  } else if (rawContent != null) {
+    reply = String(rawContent);
+  }
+}
+
+console.log("reply:", reply)
+res.json({ reply });
   } catch (error) {
     console.error("chat error:", error);
     res.status(500).json({ error: "Server error" });
